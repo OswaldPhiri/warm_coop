@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Bird, 
@@ -6,17 +7,49 @@ import {
   Stethoscope, 
   CircleDollarSign,
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
+import axios from 'axios';
 import Dashboard from './components/Dashboard';
 import BirdManager from './components/BirdManager';
 import FeedLog from './components/FeedLog';
 import VaccineTracker from './components/VaccineTracker';
 import FinanceLog from './components/FinanceLog';
+import LandingPage from './components/LandingPage';
+import AuthSuccess from './components/AuthSuccess';
 
-function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = localStorage.getItem('warmcoop_token');
+      if (token) {
+        try {
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+          const res = await axios.get(`${apiUrl}/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setUser(res.status === 200 ? res.data : null);
+        } catch (err) {
+          console.error('Auth error:', err);
+          localStorage.removeItem('warmcoop_token');
+        }
+      }
+      setLoading(false);
+    };
+    fetchUser();
+  }, []);
+
+  const logout = () => {
+    localStorage.removeItem('warmcoop_token');
+    setUser(null);
+    window.location.href = '/';
+  };
 
   const tabs = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -36,6 +69,22 @@ function App() {
       default: return <Dashboard />;
     }
   };
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-warm-600"></div>
+    </div>
+  );
+
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/auth-success" element={<AuthSuccess />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
@@ -61,6 +110,14 @@ function App() {
           <p className="text-xs text-slate-400 font-medium uppercase tracking-widest mt-1">Farmer's Assistant</p>
         </div>
 
+        <div className="flex items-center gap-3 px-2 mb-8 py-3 bg-slate-50 rounded-2xl">
+          <img src={user.image} alt={user.displayName} className="w-10 h-10 rounded-xl" />
+          <div className="overflow-hidden">
+            <p className="text-sm font-bold text-slate-800 truncate">{user.displayName}</p>
+            <p className="text-xs text-slate-400 truncate">{user.email}</p>
+          </div>
+        </div>
+
         <ul className="space-y-2">
           {tabs.map((tab) => (
             <li key={tab.id}>
@@ -83,6 +140,16 @@ function App() {
           ))}
         </ul>
 
+        <div className="mt-8">
+            <button 
+                onClick={logout}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+            >
+                <LogOut size={20} />
+                Logout
+            </button>
+        </div>
+
         <div className="mt-auto p-4 bg-warm-50 rounded-2xl md:block hidden">
           <p className="text-xs font-bold text-warm-700 uppercase">Pro Tip</p>
           <p className="text-xs text-warm-600 mt-1">Log mortality daily for accurate profit calculation.</p>
@@ -96,6 +163,14 @@ function App() {
         </div>
       </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
 
