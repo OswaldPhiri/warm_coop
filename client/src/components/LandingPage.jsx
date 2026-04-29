@@ -4,7 +4,10 @@ import chickensHero from '../assets/chickens_hero.png';
 
 const LandingPage = () => {
   const loginWithGoogle = () => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    let apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    if (!apiUrl.endsWith('/api')) {
+      apiUrl = `${apiUrl.replace(/\/$/, '')}/api`;
+    }
     window.location.href = `${apiUrl}/auth/google`;
   };
 

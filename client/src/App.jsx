@@ -30,7 +30,10 @@ function AppContent() {
       const token = localStorage.getItem('warmcoop_token');
       if (token) {
         try {
-          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+          let apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+          if (!apiUrl.endsWith('/api')) {
+            apiUrl = `${apiUrl.replace(/\/$/, '')}/api`;
+          }
           const res = await axios.get(`${apiUrl}/auth/me`, {
             headers: { Authorization: `Bearer ${token}` }
           });
