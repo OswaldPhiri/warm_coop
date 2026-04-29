@@ -50,9 +50,21 @@ router.get('/google',
 );
 
 router.get('/google/callback', 
-  passport.authenticate('google', { session: false, failureRedirect: '/login' }),
+  (req, res, next) => {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    passport.authenticate('google', { 
+      session: false, 
+      failureRedirect: `${frontendUrl}/` 
+    })(req, res, next);
+  },
   (req, res) => {
     // Successful authentication, create JWT
+    if (!req.user) {
+      console.error('Auth success called but no user found on request');
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      return res.redirect(`${frontendUrl}/`);
+    }
+    
     const token = jwt.sign(
       { id: req.user._id, email: req.user.email },
       process.env.JWT_SECRET || 'secret_key',
