@@ -15,18 +15,24 @@ passport.use(new GoogleStrategy({
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
+      console.log('Google Auth: Received profile for', profile.displayName);
       let user = await User.findOne({ googleId: profile.id });
       
       if (!user) {
+        console.log('Google Auth: Creating new user...');
         user = await User.create({
           googleId: profile.id,
           displayName: profile.displayName,
           email: profile.emails[0].value,
           image: profile.photos[0]?.value,
         });
+        console.log('Google Auth: User created successfully');
+      } else {
+        console.log('Google Auth: Existing user found');
       }
       return done(null, user);
     } catch (err) {
+      console.error('Google Auth Error:', err);
       return done(err, null);
     }
   }
