@@ -34,13 +34,20 @@ function AppContent() {
           if (!apiUrl.endsWith('/api')) {
             apiUrl = `${apiUrl.replace(/\/$/, '')}/api`;
           }
+          console.log('App: Fetching user from', `${apiUrl}/auth/me`);
+          
           const res = await axios.get(`${apiUrl}/auth/me`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          setUser(res.status === 200 ? res.data : null);
+          
+          console.log('App: Auth successful, user data:', res.data);
+          setUser(res.data);
         } catch (err) {
-          console.error('Auth error:', err);
-          localStorage.removeItem('warmcoop_token');
+          console.error('App: Auth fetching failed:', err.response?.data || err.message);
+          // Only remove token if it's actually an invalid token error (401/403)
+          if (err.response?.status === 401 || err.response?.status === 403) {
+            localStorage.removeItem('warmcoop_token');
+          }
         }
       }
       setLoading(false);
