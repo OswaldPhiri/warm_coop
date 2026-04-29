@@ -5,6 +5,7 @@ const cors = require('cors');
 const passport = require('passport');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
+const session = require('express-session');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,7 +16,20 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Session middleware (Required by Passport for OAuth state)
+app.use(session({
+  secret: process.env.JWT_SECRET || 'warmcoop_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  }
+}));
+
 app.use(passport.initialize());
+app.use(passport.session());
 
 // MongoDB Connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/warmcoop';
@@ -34,4 +48,13 @@ app.get('/', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+});
+
+// Error Handling Middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send({
+    message: 'Internal Server Error',
+    error: process.env.NODE_ENV === 'production' ? {} : err.message
+  });
 });
