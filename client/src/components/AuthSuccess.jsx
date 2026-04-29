@@ -9,9 +9,9 @@ const AuthSuccess = () => {
     const token = searchParams.get('token');
     if (token) {
       localStorage.setItem('warmcoop_token', token);
-      navigate('/');
+      window.location.href = '/';
     } else {
-      navigate('/login');
+      window.location.href = '/';
     }
   }, [searchParams, navigate]);
 
