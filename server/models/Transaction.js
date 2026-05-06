@@ -6,7 +6,8 @@ const transactionSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   date: { type: Date, default: Date.now },
   description: { type: String },
-  batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch' } // Optional: link to a specific batch
+  batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch' }, // Optional: link to a specific batch
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Transaction', transactionSchema);

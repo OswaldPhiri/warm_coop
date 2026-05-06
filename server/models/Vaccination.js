@@ -6,7 +6,8 @@ const vaccinationSchema = new mongoose.Schema({
   scheduledDate: { type: Date, required: true },
   administeredDate: { type: Date },
   isCompleted: { type: Boolean, default: false },
-  notes: { type: String }
+  notes: { type: String },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Vaccination', vaccinationSchema);

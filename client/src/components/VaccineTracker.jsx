@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, CheckCircle, Clock, Calendar, Tag } from 'lucide-react';
-import { getVaccinations, createVaccination, updateVaccination, getBatches } from '../services/api';
+import { Plus, CheckCircle, Clock, Calendar, Tag, Trash2, Edit2, X, AlertCircle } from 'lucide-react';
+import { getVaccinations, createVaccination, updateVaccination, deleteVaccination, getBatches } from '../services/api';
 import { format } from 'date-fns';
 
 const VaccineTracker = () => {
   const [vaccines, setVaccines] = useState([]);
   const [batches, setBatches] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingVaccine, setEditingVaccine] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [formData, setFormData] = useState({
     batchId: '',
     vaccineName: '',
@@ -28,15 +30,34 @@ const VaccineTracker = () => {
     }
   };
 
+  const handleOpenForm = (vaccine = null) => {
+    if (vaccine) {
+      setEditingVaccine(vaccine);
+      setFormData({
+        batchId: vaccine.batchId?._id || '',
+        vaccineName: vaccine.vaccineName,
+        scheduledDate: format(new Date(vaccine.scheduledDate), 'yyyy-MM-dd'),
+        notes: vaccine.notes || ''
+      });
+    } else {
+      setEditingVaccine(null);
+      setFormData({ batchId: '', vaccineName: '', scheduledDate: '', notes: '' });
+    }
+    setShowForm(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await createVaccination(formData);
-      setFormData({ batchId: '', vaccineName: '', scheduledDate: '', notes: '' });
+      if (editingVaccine) {
+        await updateVaccination(editingVaccine._id, formData);
+      } else {
+        await createVaccination(formData);
+      }
       setShowForm(false);
       fetchData();
     } catch (err) {
-      alert('Error scheduling vaccine');
+      alert('Error saving vaccination');
     }
   };
 
@@ -49,15 +70,29 @@ const VaccineTracker = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteConfirm) return;
+    try {
+      await deleteVaccination(deleteConfirm);
+      setDeleteConfirm(null);
+      fetchData();
+    } catch (err) {
+      alert('Error deleting vaccine');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <header className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-800">Vaccination Schedule</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Vaccination Schedule</h2>
+          <p className="text-slate-500 text-sm">Monitor health and immunization schedules</p>
+        </div>
         <button 
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-greenery-600 text-white px-6 py-2.5 rounded-2xl text-sm font-bold shadow-lg shadow-green-100"
+          onClick={() => handleOpenForm()}
+          className="flex items-center gap-2 bg-green-600 text-white px-6 py-2.5 rounded-2xl text-sm font-bold shadow-lg shadow-green-100"
         >
-          <Plus size={18} /> Schedule Vaccine
+          <Plus size={18} /> Schedule
         </button>
       </header>
 
@@ -67,12 +102,16 @@ const VaccineTracker = () => {
             onSubmit={handleSubmit}
             className="bg-white p-8 rounded-[2.5rem] w-full max-w-md space-y-6 shadow-2xl scale-in"
           >
-            <h3 className="text-xl font-black text-slate-800">Add Vaccination Schedule</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-black text-slate-800">{editingVaccine ? 'Edit Vaccination' : 'Add Vaccination'}</h3>
+              <button type="button" onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600 transition-colors"><X size={24} /></button>
+            </div>
+            
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Select Batch</label>
                 <select 
-                  required className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-greenery-500"
+                  required className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-green-500"
                   value={formData.batchId} onChange={e => setFormData({...formData, batchId: e.target.value})}
                 >
                   <option value=""> Choose a batch...</option>
@@ -83,7 +122,7 @@ const VaccineTracker = () => {
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Vaccine Name</label>
                 <input 
                   type="text" required placeholder="Gumboro (Newcastle)"
-                  className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-greenery-500"
+                  className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-green-500"
                   value={formData.vaccineName} onChange={e => setFormData({...formData, vaccineName: e.target.value})}
                 />
               </div>
@@ -91,16 +130,42 @@ const VaccineTracker = () => {
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Scheduled Date</label>
                 <input 
                   type="date" required
-                  className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-greenery-500"
+                  className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-green-500"
                   value={formData.scheduledDate} onChange={e => setFormData({...formData, scheduledDate: e.target.value})}
                 />
               </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Notes</label>
+                <textarea 
+                  className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-green-500"
+                  rows="2"
+                  value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})}
+                />
+              </div>
             </div>
-            <div className="flex gap-4">
-              <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-4 text-slate-400 font-bold">Cancel</button>
-              <button type="submit" className="flex-[2] bg-greenery-600 text-white py-4 rounded-3xl font-black shadow-xl shrink-0">Schedule</button>
-            </div>
+            <button type="submit" className="w-full bg-slate-800 text-white py-4 rounded-3xl font-black shadow-xl shrink-0">
+              {editingVaccine ? 'Update Schedule' : 'Schedule Vaccine'}
+            </button>
           </form>
+        </div>
+      )}
+
+      {/* Delete Confirmation */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-white p-8 rounded-[2rem] w-full max-w-sm space-y-6 shadow-2xl text-center">
+            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+              <AlertCircle size={32} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-slate-800">Remove Schedule?</h3>
+              <p className="text-slate-500 mt-2">This will permanently delete this vaccination reminder.</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteConfirm(null)} className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-500 bg-slate-100">Cancel</button>
+              <button onClick={handleDelete} className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-rose-600 shadow-lg shadow-rose-200">Delete</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -111,9 +176,9 @@ const VaccineTracker = () => {
           </div>
         ) : (
           vaccines.map(v => (
-            <div key={v._id} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all hover:border-greenery-200">
+            <div key={v._id} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all hover:border-green-200 group">
               <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-2xl ${v.isCompleted ? 'bg-greenery-100 text-greenery-600' : 'bg-amber-100 text-amber-600'}`}>
+                <div className={`p-3 rounded-2xl ${v.isCompleted ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
                   {v.isCompleted ? <CheckCircle size={24} /> : <Clock size={24} />}
                 </div>
                 <div>
@@ -126,16 +191,27 @@ const VaccineTracker = () => {
                 </div>
               </div>
               
-              {!v.isCompleted ? (
-                <button 
-                  onClick={() => handleComplete(v._id)}
-                  className="w-full sm:w-auto bg-greenery-50 text-greenery-600 px-4 py-2 rounded-xl text-xs font-black shadow-sm border border-greenery-100 hover:bg-greenery-600 hover:text-white transition-all"
-                >
-                  Mark Completed
-                </button>
-              ) : (
-                <span className="text-greenery-600 text-xs font-black bg-greenery-50 px-3 py-1.5 rounded-full">Completed</span>
-              )}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {!v.isCompleted ? (
+                  <button 
+                    onClick={() => handleComplete(v._id)}
+                    className="flex-1 sm:flex-none bg-green-50 text-green-600 px-4 py-2 rounded-xl text-xs font-black shadow-sm border border-green-100 hover:bg-green-600 hover:text-white transition-all"
+                  >
+                    Mark Completed
+                  </button>
+                ) : (
+                  <span className="text-green-600 text-xs font-black bg-green-50 px-3 py-1.5 rounded-full">Completed</span>
+                )}
+                
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => handleOpenForm(v)} className="p-2 text-slate-400 hover:text-warm-600 hover:bg-warm-50 rounded-lg">
+                    <Edit2 size={16} />
+                  </button>
+                  <button onClick={() => setDeleteConfirm(v._id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
             </div>
           ))
         )}

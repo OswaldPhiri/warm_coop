@@ -6,7 +6,8 @@ const dailyRecordSchema = new mongoose.Schema({
   mortality: { type: Number, default: 0 },
   feedQuantity: { type: Number, default: 0 }, // in kg
   feedCost: { type: Number, default: 0 }, // in local currency (MWK)
-  notes: { type: String }
+  notes: { type: String },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
 module.exports = mongoose.model('DailyRecord', dailyRecordSchema);
