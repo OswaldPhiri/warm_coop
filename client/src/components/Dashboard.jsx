@@ -125,7 +125,7 @@ const Dashboard = () => {
             <TrendingUp size={20} className="text-green-500" />
             Performance Metric
           </h3>
-          <div className="h-64">
+          <div className="h-64 min-h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={[
                 { name: 'Jan', val: 400 },
